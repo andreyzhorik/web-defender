@@ -15,6 +15,7 @@
       align-items: center;
       justify-content: center;
       gap: 20px;
+      margin: 0;
     }
 
     h1 {
@@ -74,6 +75,7 @@
       font-weight: bold;
       min-width: 100px;
       position: relative;
+      user-select: none;
     }
 
     .shortcut:hover {
@@ -87,15 +89,16 @@
       right: 6px;
       width: 22px;
       height: 22px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       background: rgba(255, 255, 255, 0.12);
       color: white;
       border: none;
       border-radius: 50%;
-      font-size: 14px;
-      line-height: 1;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
       opacity: 0;
       transition: 0.2s;
@@ -250,9 +253,14 @@
       doc.close();
     }
 
+    function getAllShortcuts() {
+      let saved = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
+      if (saved.length === 0) saved = defaultShortcuts;
+      return saved;
+    }
+
     function loadShortcuts() {
-      const saved = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
-      const shortcuts = [...defaultShortcuts, ...saved];
+      const shortcuts = getAllShortcuts();
       shortcutsContainer.innerHTML = "";
 
       shortcuts.forEach((sc) => {
@@ -271,9 +279,8 @@
 
         xBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          const saved = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
-          const filtered = saved.filter(s => !(s.name === sc.name && s.url === sc.url));
-          localStorage.setItem("webDefenderShortcuts", JSON.stringify(filtered));
+          const all = getAllShortcuts().filter(s => !(s.name === sc.name && s.url === sc.url));
+          localStorage.setItem("webDefenderShortcuts", JSON.stringify(all));
           loadShortcuts();
         });
 
@@ -289,7 +296,7 @@
         const url = prompt("Enter full URL (https://...):");
         if (!name || !url) return;
         if (!url.startsWith("http")) return alert("Please include https:// or http://");
-        const saved = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
+        const saved = getAllShortcuts();
         saved.push({ name, url });
         localStorage.setItem("webDefenderShortcuts", JSON.stringify(saved));
         loadShortcuts();
