@@ -16,12 +16,17 @@
       justify-content: center;
       gap: 20px;
     }
-    
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
     .input-container {
-  		display: flex;
-  		gap: 10px;
-  		align-items: center;
-	}
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
 
     input {
       width: 300px;
@@ -50,20 +55,65 @@
       background: #0093cc;
       transform: scale(1.05);
     }
+
+    .shortcuts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      max-width: 500px;
+    }
+
+    .shortcut {
+      background: #1a1a25;
+      border-radius: 12px;
+      padding: 15px 25px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: bold;
+      min-width: 100px;
+    }
+
+    .shortcut:hover {
+      background: #00b7ff;
+      transform: scale(1.05);
+    }
+
+    .add-btn {
+      background: #2a2a38;
+      border: 2px dashed #00b7ff;
+      color: #00b7ff;
+    }
+
+    .add-btn:hover {
+      background: #00b7ff;
+      color: white;
+    }
   </style>
 </head>
 <body>
   <h1>Secure Any Website</h1>
-  <div class="input-container">
-  	<input id="urlInput" type="text" placeholder="Enter URL (https://...)" />
-  	<button id="openBtn">Open</button>
-  </div>
-  <script>
-    document.getElementById("openBtn").addEventListener("click", () => {
-      const url = document.getElementById("urlInput").value.trim();
-      if (!url) return alert("Please enter a URL!");
-      if (!url.startsWith("http")) return alert("Please include https:// or http://");
 
+  <div class="input-container">
+    <input id="urlInput" type="text" placeholder="Enter URL (https://...)" />
+    <button id="openBtn">Open</button>
+  </div>
+
+  <div class="shortcuts" id="shortcuts"></div>
+
+  <script>
+    const shortcutsContainer = document.getElementById("shortcuts");
+
+    const defaultShortcuts = [
+      { name: "Google", url: "https://www.google.com" },
+      { name: "YouTube", url: "https://www.youtube.com" },
+      { name: "GitHub", url: "https://github.com" },
+      { name: "Reddit", url: "https://www.reddit.com" },
+    ];
+
+    function openSecured(url) {
+      if (!url.startsWith("http")) return alert("Please include https:// or http://");
       const newTab = window.open("about:blank", "_blank");
       if (newTab) {
         newTab.document.write(`
@@ -92,7 +142,7 @@
                   event.preventDefault();
                   event.returnValue = "";
                 });
-              <\/script>
+              <\\/script>
             </body>
           </html>
         `);
@@ -100,7 +150,45 @@
       } else {
         alert("Please allow pop-ups for this site!");
       }
+    }
+
+    function loadShortcuts() {
+      const saved = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
+      const shortcuts = [...defaultShortcuts, ...saved];
+
+      shortcutsContainer.innerHTML = "";
+
+      shortcuts.forEach(sc => {
+        const div = document.createElement("div");
+        div.className = "shortcut";
+        div.textContent = sc.name;
+        div.addEventListener("click", () => openSecured(sc.url));
+        shortcutsContainer.appendChild(div);
+      });
+
+      // Add button to create a new shortcut
+      const addBtn = document.createElement("div");
+      addBtn.className = "shortcut add-btn";
+      addBtn.textContent = "+ Add Shortcut";
+      addBtn.addEventListener("click", () => {
+        const name = prompt("Enter shortcut name:");
+        const url = prompt("Enter full URL (https://...):");
+        if (!name || !url) return;
+        if (!url.startsWith("http")) return alert("Please include https:// or http://");
+        saved.push({ name, url });
+        localStorage.setItem("webDefenderShortcuts", JSON.stringify(saved));
+        loadShortcuts();
+      });
+      shortcutsContainer.appendChild(addBtn);
+    }
+
+    document.getElementById("openBtn").addEventListener("click", () => {
+      const url = document.getElementById("urlInput").value.trim();
+      if (!url) return alert("Please enter a URL!");
+      openSecured(url);
     });
+
+    loadShortcuts();
   </script>
 </body>
 </html>
