@@ -73,11 +73,36 @@
       transition: 0.2s;
       font-weight: bold;
       min-width: 100px;
+      position: relative;
     }
 
     .shortcut:hover {
       background: #00b7ff;
       transform: scale(1.05);
+    }
+
+    .shortcut .remove-btn {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      font-size: 14px;
+      display: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .shortcut:hover .remove-btn {
+      display: block;
+    }
+
+    .shortcut .remove-btn:hover {
+      background: rgba(255, 60, 60, 0.8);
     }
 
     .add-btn {
@@ -89,6 +114,58 @@
     .add-btn:hover {
       background: #00b7ff;
       color: white;
+    }
+
+    .switch-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #444;
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+
+    input:checked + .slider {
+      background-color: #00b7ff;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(24px);
     }
   </style>
 </head>
@@ -102,8 +179,17 @@
 
   <div class="shortcuts" id="shortcuts"></div>
 
+  <div class="switch-container">
+    <label>Open in new tab:</label>
+    <label class="switch">
+      <input type="checkbox" id="newTabSwitch" checked />
+      <span class="slider"></span>
+    </label>
+  </div>
+
   <script>
     const shortcutsContainer = document.getElementById("shortcuts");
+    const newTabSwitch = document.getElementById("newTabSwitch");
 
     const defaultShortcuts = [
       { name: "Google", url: "https://www.google.com" },
@@ -114,59 +200,83 @@
 
     function openSecured(url) {
       if (!url.startsWith("http")) return alert("Please include https:// or http://");
-      const newTab = window.open("about:blank", "_blank");
-      if (newTab) {
-        newTab.document.write(`
-          <html>
-            <head>
-              <title>Website Secured</title>
-              <style>
-                html, body {
-                  margin: 0;
-                  padding: 0;
-                  height: 100%;
-                  overflow: hidden;
-                  background-color: #0b0b11;
-                }
-                iframe {
-                  width: 100%;
-                  height: 100%;
-                  border: none;
-                }
-              </style>
-            </head>
-            <body>
-              <iframe src="${url}"></iframe>
-              <script>
-                window.addEventListener("beforeunload", (event) => {
-                  event.preventDefault();
-                  event.returnValue = "";
-                });
-              <\\/script>
-            </body>
-          </html>
-        `);
-        newTab.document.close();
+
+      if (newTabSwitch.checked) {
+        // open in new tab
+        const newTab = window.open("about:blank", "_blank");
+        if (newTab) fillWindow(newTab.document, url);
+        else alert("Please allow pop-ups for this site!");
       } else {
-        alert("Please allow pop-ups for this site!");
+        // open in same tab
+        const doc = document.open();
+        fillWindow(doc, url);
       }
+    }
+
+    function fillWindow(doc, url) {
+      doc.write(`
+        <html>
+          <head>
+            <title>Website Secured</title>
+            <style>
+              html, body {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                overflow: hidden;
+                background-color: #0b0b11;
+              }
+              iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+              }
+            </style>
+          </head>
+          <body>
+            <iframe src="${url}"></iframe>
+            <script>
+              window.addEventListener("beforeunload", (event) => {
+                event.preventDefault();
+                event.returnValue = "";
+              });
+            <\\/script>
+          </body>
+        </html>
+      `);
+      doc.close();
     }
 
     function loadShortcuts() {
       const saved = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
       const shortcuts = [...defaultShortcuts, ...saved];
-
       shortcutsContainer.innerHTML = "";
 
-      shortcuts.forEach(sc => {
+      shortcuts.forEach((sc, i) => {
         const div = document.createElement("div");
         div.className = "shortcut";
         div.textContent = sc.name;
         div.addEventListener("click", () => openSecured(sc.url));
+
+        // remove button
+        const xBtn = document.createElement("button");
+        xBtn.className = "remove-btn";
+        xBtn.textContent = "×";
+        xBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (confirm(`Remove shortcut "${sc.name}"?`)) {
+            const all = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
+            const filtered = all.filter(s => s.name !== sc.name || s.url !== sc.url);
+            localStorage.setItem("webDefenderShortcuts", JSON.stringify(filtered));
+            loadShortcuts();
+          }
+        });
+
+        div.appendChild(xBtn);
         shortcutsContainer.appendChild(div);
       });
 
-      // Add button to create a new shortcut
+      // Add button
       const addBtn = document.createElement("div");
       addBtn.className = "shortcut add-btn";
       addBtn.textContent = "+ Add Shortcut";
@@ -175,6 +285,7 @@
         const url = prompt("Enter full URL (https://...):");
         if (!name || !url) return;
         if (!url.startsWith("http")) return alert("Please include https:// or http://");
+        const saved = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
         saved.push({ name, url });
         localStorage.setItem("webDefenderShortcuts", JSON.stringify(saved));
         loadShortcuts();
