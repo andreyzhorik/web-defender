@@ -81,28 +81,33 @@
       transform: scale(1.05);
     }
 
-    .shortcut .remove-btn {
+    .remove-btn {
       position: absolute;
       top: 6px;
-      right: 8px;
-      background: rgba(255, 255, 255, 0.15);
+      right: 6px;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.12);
       color: white;
       border: none;
       border-radius: 50%;
-      width: 22px;
-      height: 22px;
       font-size: 14px;
-      display: none;
+      line-height: 1;
       cursor: pointer;
+      opacity: 0;
       transition: 0.2s;
     }
 
     .shortcut:hover .remove-btn {
-      display: block;
+      opacity: 1;
     }
 
-    .shortcut .remove-btn:hover {
-      background: rgba(255, 60, 60, 0.8);
+    .remove-btn:hover {
+      background: rgba(255, 60, 60, 0.85);
+      transform: scale(1.1);
     }
 
     .add-btn {
@@ -202,12 +207,10 @@
       if (!url.startsWith("http")) return alert("Please include https:// or http://");
 
       if (newTabSwitch.checked) {
-        // open in new tab
         const newTab = window.open("about:blank", "_blank");
         if (newTab) fillWindow(newTab.document, url);
         else alert("Please allow pop-ups for this site!");
       } else {
-        // open in same tab
         const doc = document.open();
         fillWindow(doc, url);
       }
@@ -252,31 +255,32 @@
       const shortcuts = [...defaultShortcuts, ...saved];
       shortcutsContainer.innerHTML = "";
 
-      shortcuts.forEach((sc, i) => {
+      shortcuts.forEach((sc) => {
         const div = document.createElement("div");
         div.className = "shortcut";
         div.textContent = sc.name;
-        div.addEventListener("click", () => openSecured(sc.url));
 
-        // remove button
+        div.addEventListener("click", (e) => {
+          if (e.target.classList.contains("remove-btn")) return;
+          openSecured(sc.url);
+        });
+
         const xBtn = document.createElement("button");
         xBtn.className = "remove-btn";
         xBtn.textContent = "×";
+
         xBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          if (confirm(`Remove shortcut "${sc.name}"?`)) {
-            const all = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
-            const filtered = all.filter(s => s.name !== sc.name || s.url !== sc.url);
-            localStorage.setItem("webDefenderShortcuts", JSON.stringify(filtered));
-            loadShortcuts();
-          }
+          const saved = JSON.parse(localStorage.getItem("webDefenderShortcuts") || "[]");
+          const filtered = saved.filter(s => !(s.name === sc.name && s.url === sc.url));
+          localStorage.setItem("webDefenderShortcuts", JSON.stringify(filtered));
+          loadShortcuts();
         });
 
         div.appendChild(xBtn);
         shortcutsContainer.appendChild(div);
       });
 
-      // Add button
       const addBtn = document.createElement("div");
       addBtn.className = "shortcut add-btn";
       addBtn.textContent = "+ Add Shortcut";
