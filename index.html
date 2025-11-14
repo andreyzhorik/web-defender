@@ -84,7 +84,7 @@
     }
     .tile:hover{ transform:scale(1.04); background:var(--accent); color:#000 }
 
-    /* perfect circular remove button */
+    / perfect circular remove button /
     .remove-btn{
       position:absolute;
       top:20px;
@@ -123,7 +123,7 @@
       margin-top:6px;
     }
 
-    /* toggle */
+    / toggle /
     .switch{ position:relative; width:50px; height:26px; display:inline-block;}
     .switch input{ display:none; }
     .switch .track{
@@ -135,7 +135,7 @@
     .switch input:checked + .track{ background:var(--accent); }
     .switch input:checked + .track .knob{ transform:translateX(24px); }
 
-    /* small helper */
+    / small helper /
     .muted{ color:#9aa2af; font-size:13px }
     @media (max-width:420px){
       input[type="text"]{width:60vw}
@@ -260,7 +260,8 @@
     function writeSecuredDoc(targetDoc, url){
       // sanitize the url text to avoid breaking the written HTML (simple replace)
       const safeUrl = String(url).replace(/<\/script>/gi, '<\\/script>');
-      const html = `<!doctype html>
+      const html = 
+        <!doctype html>
         <html>
           <head>
             <meta charset="utf-8" />
@@ -269,43 +270,14 @@
             <style>
               html,body{height:100%;margin:0;background:#0b0b11}
               iframe{width:100%;height:100%;border:0}
-              .bar{
-                position:fixed;
-                left:8px;
-                top:8px;
-                z-index:9999;
-                padding:8px 10px;
-                border-radius:10px;
-                background:rgba(0,0,0,0.45);
-                color:#fff;
-                font-family:Inter,Arial;
-                user-select:text; /* so you can select the text if you want */
-                cursor:default;
-              }
-              .btn{
-                background:#00b7ff;
-                color:#000;
-                padding:6px 8px;
-                border-radius:8px;
-                border:0;
-                font-weight:700;
-                cursor:pointer;
-                margin-left:10px;
-              }
+              .bar{position:fixed;left:8px;top:8px;z-index:9999;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,0.45);color:#fff;font-family:Inter,Arial}
+              .btn{background:#00b7ff;color:#000;padding:6px 8px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
             </style>
           </head>
           <body>
-            <div class="bar" id="bar">
-              Web Defender — opened: <span id="openedUrl">${safeUrl}</span>
-              <button class="btn" id="openNew">Open in new tab</button>
-            </div>
+            <div class="bar">Web Defender — opened: ${safeUrl}   <button class="btn" id="openNew">Open in new tab</button></div>
             <iframe src="${safeUrl}" id="wd-frame" ></iframe>
             <script>
-              // Allow right-click context menu on the bar
-              document.getElementById('bar').addEventListener('contextmenu', function(e){
-                e.stopPropagation(); // let context menu open here normally
-              });
-
               // add two handlers to be extra reliable
               function beforeUnloadHandler(e){
                 var msg = 'You have unsaved changes — are you sure you want to leave?';
@@ -323,10 +295,10 @@
 
               // small safeguard: if iframe tries to navigate top (rare), reattach listener
               window.addEventListener('focus', function(){ window.onbeforeunload = beforeUnloadHandler; });
-            </script>
+            <\/script>
           </body>
         </html>
-      `;
+      ;
       try{
         targetDoc.write(html);
         targetDoc.close();
