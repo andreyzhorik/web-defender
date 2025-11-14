@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Web Defender</title>
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <style>
     :root{
       --bg:#0b0b11;
@@ -139,12 +140,40 @@
 
     /* small helper */
     .muted{ color:#9aa2af; font-size:13px }
+    
+    /* NEW: Inspect button styles */
+    .inspect-btn {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 1000;
+      background: var(--muted);
+      color: var(--text);
+      border: 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform .12s ease, background .12s;
+    }
+    .inspect-btn:hover {
+      transform: scale(1.05);
+      background: var(--accent);
+      color: #000;
+    }
+    /* Hide the default Eruda floating button */
+    .eruda-entry-btn {
+      display: none;
+    }
+
     @media (max-width:420px){
       input[type="text"]{width:60vw}
     }
   </style>
 </head>
 <body>
+  <button id="inspectBtn" class="inspect-btn">Inspect</button>
+
   <h1>Web Defender</h1>
 
   <div class="input-row">
@@ -315,6 +344,17 @@
       if(!url){ alert('Please enter a URL'); return; }
       openSecured(url);
     });
+    
+    // NEW: Dev tools functionality
+    const inspectBtn = document.getElementById('inspectBtn');
+    if (window.eruda) {
+      eruda.init();
+      // hide console on start
+      eruda.hide();
+      inspectBtn.addEventListener('click', () => eruda.show());
+    } else {
+      inspectBtn.style.display = 'none';
+    }
 
     // init
     renderShortcuts();
