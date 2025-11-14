@@ -16,24 +16,48 @@
     body{
       margin:0;
       min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:18px;
-      flex-direction:column;
       background:var(--bg);
       color:var(--text);
       font-family:Inter, system-ui, Arial, sans-serif;
       padding:28px;
+      /* Remove flex center */
+      /* display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
+      flex-direction:column; */
+      position: relative;
     }
 
-    h1{font-size:1.6rem;margin:0 0 6px 0;font-weight:600}
+    h1{
+      font-size:1.6rem;
+      margin:0 0 6px 0;
+      font-weight:600;
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      user-select: text; /* allow text selection */
+      cursor: default; /* normal arrow */
+      z-index: 1000;
+      background: transparent;
+    }
+
+    .main-container {
+      /* to push content down from fixed header */
+      margin-top: 60px;
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
+    }
 
     .input-row{
       display:flex;
       gap:10px;
       align-items:center;
       flex-wrap:wrap;
+      max-width: 100%;
     }
     input[type="text"]{
       width:320px;
@@ -145,19 +169,21 @@
 <body>
   <h1>Web Defender</h1>
 
-  <div class="input-row">
-    <input id="urlInput" type="text" placeholder="Enter URL (https://...)" />
-    <button id="openBtn" class="btn">Open</button>
-    <div class="controls">
-      <label class="muted">Open in new tab</label>
-      <label class="switch">
-        <input id="newTabSwitch" type="checkbox" checked>
-        <span class="track"><span class="knob"></span></span>
-      </label>
+  <div class="main-container">
+    <div class="input-row">
+      <input id="urlInput" type="text" placeholder="Enter URL (https://...)" />
+      <button id="openBtn" class="btn">Open</button>
+      <div class="controls">
+        <label class="muted">Open in new tab</label>
+        <label class="switch">
+          <input id="newTabSwitch" type="checkbox" checked>
+          <span class="track"><span class="knob"></span></span>
+        </label>
+      </div>
     </div>
-  </div>
 
-  <div class="shortcuts" id="shortcuts"></div>
+    <div class="shortcuts" id="shortcuts"></div>
+  </div>
 
   <script>
     // -- data & storage helpers
@@ -260,8 +286,8 @@
     function writeSecuredDoc(targetDoc, url){
       // sanitize the url text to avoid breaking the written HTML (simple replace)
       const safeUrl = String(url).replace(/<\/script>/gi, '<\\/script>');
-      const html = `
-        <!doctype html>
+      const html = 
+        `<!doctype html>
         <html>
           <head>
             <meta charset="utf-8" />
@@ -275,7 +301,7 @@
             </style>
           </head>
           <body>
-            <div class="bar">Web Defender — opened: ${safeUrl} &nbsp; <button class="btn" id="openNew">Open in new tab</button></div>
+            <div class="bar">Web Defender — opened: ${safeUrl}   <button class="btn" id="openNew">Open in new tab</button></div>
             <iframe src="${safeUrl}" id="wd-frame" ></iframe>
             <script>
               // add two handlers to be extra reliable
@@ -295,7 +321,7 @@
 
               // small safeguard: if iframe tries to navigate top (rare), reattach listener
               window.addEventListener('focus', function(){ window.onbeforeunload = beforeUnloadHandler; });
-            <\/script>
+            </script>
           </body>
         </html>
       `;
