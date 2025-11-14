@@ -84,7 +84,7 @@
     }
     .tile:hover{ transform:scale(1.04); background:var(--accent); color:#000 }
 
-    / perfect circular remove button /
+    /* perfect circular remove button */
     .remove-btn{
       position:absolute;
       top:20px;
@@ -123,19 +123,21 @@
       margin-top:6px;
     }
 
-    / toggle /
+    /* toggle */
     .switch{ position:relative; width:50px; height:26px; display:inline-block;}
     .switch input{ display:none; }
     .switch .track{
       position:absolute; inset:0; border-radius:999px; background:#444; transition:background .18s;
+      display:flex;
+      align-items:center;
     }
     .switch .knob{
       position:absolute; left:3px; top:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .18s;
     }
     .switch input:checked + .track{ background:var(--accent); }
-    .switch input:checked + .track .knob{ transform:translateX(24px); }
+    .switch input:checked + .track > .knob{ transform:translateX(24px); }
 
-    / small helper /
+    /* small helper */
     .muted{ color:#9aa2af; font-size:13px }
     @media (max-width:420px){
       input[type="text"]{width:60vw}
@@ -261,44 +263,43 @@
       // sanitize the url text to avoid breaking the written HTML (simple replace)
       const safeUrl = String(url).replace(/<\/script>/gi, '<\\/script>');
       const html = 
-        <!doctype html>
-        <html>
-          <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width,initial-scale=1">
-            <title>Website Secured</title>
-            <style>
-              html,body{height:100%;margin:0;background:#0b0b11}
-              iframe{width:100%;height:100%;border:0}
-              .bar{position:fixed;left:8px;top:8px;z-index:9999;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,0.45);color:#fff;font-family:Inter,Arial}
-              .btn{background:#00b7ff;color:#000;padding:6px 8px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
-            </style>
-          </head>
-          <body>
-            <div class="bar">Web Defender — opened: ${safeUrl}   <button class="btn" id="openNew">Open in new tab</button></div>
-            <iframe src="${safeUrl}" id="wd-frame" ></iframe>
-            <script>
-              // add two handlers to be extra reliable
-              function beforeUnloadHandler(e){
-                var msg = 'You have unsaved changes — are you sure you want to leave?';
-                e = e || window.event;
-                if (e) e.returnValue = msg;
-                return msg;
-              }
-              window.onbeforeunload = beforeUnloadHandler;
-              window.addEventListener('beforeunload', beforeUnloadHandler);
+`<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Website Secured</title>
+    <style>
+      html,body{height:100%;margin:0;background:#0b0b11}
+      iframe{width:100%;height:100%;border:0}
+      .bar{position:fixed;left:8px;top:8px;z-index:9999;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,0.45);color:#fff;font-family:Inter,Arial}
+      .btn{background:#00b7ff;color:#000;padding:6px 8px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
+    </style>
+  </head>
+  <body>
+    <div class="bar">Web Defender — opened: ${safeUrl}   <button class="btn" id="openNew">Open in new tab</button></div>
+    <iframe src="${safeUrl}" id="wd-frame" ></iframe>
+    <script>
+      // add two handlers to be extra reliable
+      function beforeUnloadHandler(e){
+        var msg = 'You have unsaved changes — are you sure you want to leave?';
+        e = e || window.event;
+        if (e) e.returnValue = msg;
+        return msg;
+      }
+      window.onbeforeunload = beforeUnloadHandler;
+      window.addEventListener('beforeunload', beforeUnloadHandler);
 
-              // button to open real new tab from inside
-              document.getElementById('openNew').addEventListener('click', function(){
-                window.open('${safeUrl}', '_blank');
-              });
+      // button to open real new tab from inside
+      document.getElementById('openNew').addEventListener('click', function(){
+        window.open('${safeUrl}', '_blank');
+      });
 
-              // small safeguard: if iframe tries to navigate top (rare), reattach listener
-              window.addEventListener('focus', function(){ window.onbeforeunload = beforeUnloadHandler; });
-            <\/script>
-          </body>
-        </html>
-      ;
+      // small safeguard: if iframe tries to navigate top (rare), reattach listener
+      window.addEventListener('focus', function(){ window.onbeforeunload = beforeUnloadHandler; });
+    <\/script>
+  </body>
+</html>`;
       try{
         targetDoc.write(html);
         targetDoc.close();
