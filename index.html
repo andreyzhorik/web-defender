@@ -16,48 +16,24 @@
     body{
       margin:0;
       min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
+      flex-direction:column;
       background:var(--bg);
       color:var(--text);
       font-family:Inter, system-ui, Arial, sans-serif;
       padding:28px;
-      /* Remove flex center */
-      /* display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:18px;
-      flex-direction:column; */
-      position: relative;
     }
 
-    h1{
-      font-size:1.6rem;
-      margin:0 0 6px 0;
-      font-weight:600;
-      position: fixed;
-      top: 16px;
-      left: 16px;
-      user-select: text; /* allow text selection */
-      cursor: default; /* normal arrow */
-      z-index: 1000;
-      background: transparent;
-    }
-
-    .main-container {
-      /* to push content down from fixed header */
-      margin-top: 60px;
-      display:flex;
-      flex-direction: column;
-      align-items:center;
-      justify-content:center;
-      gap:18px;
-    }
+    h1{font-size:1.6rem;margin:0 0 6px 0;font-weight:600}
 
     .input-row{
       display:flex;
       gap:10px;
       align-items:center;
       flex-wrap:wrap;
-      max-width: 100%;
     }
     input[type="text"]{
       width:320px;
@@ -169,21 +145,19 @@
 <body>
   <h1>Web Defender</h1>
 
-  <div class="main-container">
-    <div class="input-row">
-      <input id="urlInput" type="text" placeholder="Enter URL (https://...)" />
-      <button id="openBtn" class="btn">Open</button>
-      <div class="controls">
-        <label class="muted">Open in new tab</label>
-        <label class="switch">
-          <input id="newTabSwitch" type="checkbox" checked>
-          <span class="track"><span class="knob"></span></span>
-        </label>
-      </div>
+  <div class="input-row">
+    <input id="urlInput" type="text" placeholder="Enter URL (https://...)" />
+    <button id="openBtn" class="btn">Open</button>
+    <div class="controls">
+      <label class="muted">Open in new tab</label>
+      <label class="switch">
+        <input id="newTabSwitch" type="checkbox" checked>
+        <span class="track"><span class="knob"></span></span>
+      </label>
     </div>
-
-    <div class="shortcuts" id="shortcuts"></div>
   </div>
+
+  <div class="shortcuts" id="shortcuts"></div>
 
   <script>
     // -- data & storage helpers
@@ -286,8 +260,7 @@
     function writeSecuredDoc(targetDoc, url){
       // sanitize the url text to avoid breaking the written HTML (simple replace)
       const safeUrl = String(url).replace(/<\/script>/gi, '<\\/script>');
-      const html = 
-        `<!doctype html>
+      const html = `<!doctype html>
         <html>
           <head>
             <meta charset="utf-8" />
@@ -296,14 +269,43 @@
             <style>
               html,body{height:100%;margin:0;background:#0b0b11}
               iframe{width:100%;height:100%;border:0}
-              .bar{position:fixed;left:8px;top:8px;z-index:9999;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,0.45);color:#fff;font-family:Inter,Arial}
-              .btn{background:#00b7ff;color:#000;padding:6px 8px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
+              .bar{
+                position:fixed;
+                left:8px;
+                top:8px;
+                z-index:9999;
+                padding:8px 10px;
+                border-radius:10px;
+                background:rgba(0,0,0,0.45);
+                color:#fff;
+                font-family:Inter,Arial;
+                user-select:text; /* so you can select the text if you want */
+                cursor:default;
+              }
+              .btn{
+                background:#00b7ff;
+                color:#000;
+                padding:6px 8px;
+                border-radius:8px;
+                border:0;
+                font-weight:700;
+                cursor:pointer;
+                margin-left:10px;
+              }
             </style>
           </head>
           <body>
-            <div class="bar">Web Defender — opened: ${safeUrl}   <button class="btn" id="openNew">Open in new tab</button></div>
+            <div class="bar" id="bar">
+              Web Defender — opened: <span id="openedUrl">${safeUrl}</span>
+              <button class="btn" id="openNew">Open in new tab</button>
+            </div>
             <iframe src="${safeUrl}" id="wd-frame" ></iframe>
             <script>
+              // Allow right-click context menu on the bar
+              document.getElementById('bar').addEventListener('contextmenu', function(e){
+                e.stopPropagation(); // let context menu open here normally
+              });
+
               // add two handlers to be extra reliable
               function beforeUnloadHandler(e){
                 var msg = 'You have unsaved changes — are you sure you want to leave?';
