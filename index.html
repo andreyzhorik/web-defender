@@ -140,7 +140,7 @@
 
     /* small helper */
     .muted{ color:#9aa2af; font-size:13px }
-
+    
     /* NEW: Inspect button styles */
     .inspect-btn {
       position: fixed;
@@ -202,6 +202,7 @@
       try{
         const raw = localStorage.getItem(KEY);
         if(!raw){
+          // initialize store with defaults so defaults become removable
           localStorage.setItem(KEY, JSON.stringify(defaultShortcuts));
           return [...defaultShortcuts];
         }
@@ -224,6 +225,7 @@
       tile.title = item.url;
       tile.textContent = item.name;
 
+      // remove button (perfect circle)
       const rb = document.createElement('button');
       rb.className = 'remove-btn';
       rb.innerHTML = '×';
@@ -231,6 +233,7 @@
 
       rb.addEventListener('click', (ev) => {
         ev.stopPropagation();
+        // remove from store
         const cur = readStore();
         const filtered = cur.filter(s => !(s.name === item.name && s.url === item.url));
         writeStore(filtered);
@@ -238,6 +241,7 @@
       });
 
       tile.addEventListener('click', (ev) => {
+        // ensure clicking the remove button doesn't trigger open (safety)
         if(ev.target === rb) return;
         openSecured(item.url);
       });
@@ -251,6 +255,7 @@
       const list = readStore();
       list.forEach(it => shortcutsWrap.appendChild(buildTile(it)));
 
+      // add tile
       const add = document.createElement('div');
       add.className = 'tile add-tile';
       add.textContent = '+ Add';
@@ -267,7 +272,7 @@
       shortcutsWrap.appendChild(add);
     }
 
-    // open behavior: open about:blank then write HTML with iframe + beforeunload + eruda + inspect button
+    // -- open behaviour: always open about:blank then write HTML that contains iframe + beforeunload
     function openSecured(url){
       if(!/^https?:\/\//i.test(url)){ alert('Please include https:// or http://'); return; }
       if(newTabSwitch.checked){
@@ -275,107 +280,54 @@
         if(!w){ alert('Enable pop-ups for this site'); return; }
         writeSecuredDoc(w.document, url);
       } else {
+        // replace current document by navigating to about:blank first, then writing
+        // using location.href = 'about:blank' would create navigation and we lose JS context; instead we open blank in same tab by writing to document
         const doc = document.open();
         writeSecuredDoc(doc, url);
       }
     }
 
-    // writes a full HTML doc into targetDoc with eruda and inspect button for new tab
+    // writes a full HTML doc into targetDoc (either window.document or current doc)
     function writeSecuredDoc(targetDoc, url){
+      // sanitize the url text to avoid breaking the written HTML (simple replace)
       const safeUrl = String(url).replace(/<\/script>/gi, '<\\/script>');
       const html = 
 `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Website Secured</title>
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <style>
-    html, body {height:100%; margin:0; background:#0b0b11; color:#fff; font-family:Inter, Arial, sans-serif;}
-    iframe {width:100%; height:100%; border:0; display:block;}
-    .bar {
-      position: fixed;
-      left: 8px;
-      top: 8px;
-      z-index: 9999;
-      padding: 8px 12px;
-      border-radius: 10px;
-      background: rgba(0,0,0,0.45);
-      color: #fff;
-      font-family: Inter, Arial, sans-serif;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .btn {
-      background: #00b7ff;
-      color: #000;
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 0;
-      font-weight: 700;
-      cursor: pointer;
-      user-select:none;
-    }
-    #inspectBtn {
-      background: #2a2a38;
-      color: #fff;
-      border: 0;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: transform .12s ease, background .12s;
-      user-select:none;
-    }
-    #inspectBtn:hover {
-      transform: scale(1.05);
-      background: #00b7ff;
-      color: #000;
-    }
-  </style>
-</head>
-<body>
-  <div class="bar">
-    Web Defender — opened: ${safeUrl}
-    <button class="btn" id="openNew">Open in new tab</button>
-    <button id="inspectBtn">Inspect</button>
-  </div>
-  <iframe src="${safeUrl}" id="wd-frame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Website Secured</title>
+    <style>
+      html,body{height:100%;margin:0;background:#0b0b11}
+      iframe{width:100%;height:100%;border:0}
+      .bar{position:fixed;left:8px;top:8px;z-index:9999;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,0.45);color:#fff;font-family:Inter,Arial}
+      .btn{background:#00b7ff;color:#000;padding:6px 8px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
+    </style>
+  </head>
+  <body>
+    <div class="bar">Web Defender — opened: ${safeUrl}   <button class="btn" id="openNew">Open in new tab</button></div>
+    <iframe src="${safeUrl}" id="wd-frame" ></iframe>
+    <script>
+      // add two handlers to be extra reliable
+      function beforeUnloadHandler(e){
+        var msg = 'You have unsaved changes — are you sure you want to leave?';
+        e = e || window.event;
+        if (e) e.returnValue = msg;
+        return msg;
+      }
+      window.onbeforeunload = beforeUnloadHandler;
+      window.addEventListener('beforeunload', beforeUnloadHandler);
 
-  <script>
-    if(window.eruda){
-      eruda.init();
-      eruda.hide();
-      const inspectBtn = document.getElementById('inspectBtn');
-      inspectBtn.addEventListener('click', () => {
-        if(eruda._isShown){
-          eruda.hide();
-        } else {
-          eruda.show();
-        }
+      // button to open real new tab from inside
+      document.getElementById('openNew').addEventListener('click', function(){
+        window.open('${safeUrl}', '_blank');
       });
-    } else {
-      document.getElementById('inspectBtn').style.display = 'none';
-    }
 
-    function beforeUnloadHandler(e){
-      var msg = 'You have unsaved changes — are you sure you want to leave?';
-      e = e || window.event;
-      if (e) e.returnValue = msg;
-      return msg;
-    }
-    window.onbeforeunload = beforeUnloadHandler;
-    window.addEventListener('beforeunload', beforeUnloadHandler);
-
-    document.getElementById('openNew').addEventListener('click', function(){
-      window.open('${safeUrl}', '_blank');
-    });
-
-    window.addEventListener('focus', function(){ window.onbeforeunload = beforeUnloadHandler; });
-  </script>
-</body>
+      // small safeguard: if iframe tries to navigate top (rare), reattach listener
+      window.addEventListener('focus', function(){ window.onbeforeunload = beforeUnloadHandler; });
+    <\/script>
+  </body>
 </html>`;
       try{
         targetDoc.write(html);
