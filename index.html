@@ -1,363 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Web Defender</title>
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <style>
-    :root{
-      --bg:#0b0b11;
-      --panel:#1a1a25;
-      --accent:#00b7ff;
-      --muted:#2a2a38;
-      --text:#fff;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:18px;
-      flex-direction:column;
-      background:var(--bg);
-      color:var(--text);
-      font-family:Inter, system-ui, Arial, sans-serif;
-      padding:28px;
-    }
-
-    h1{font-size:1.6rem;margin:0 0 6px 0;font-weight:600}
-
-    .input-row{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    input[type="text"]{
-      width:320px;
-      max-width:70vw;
-      padding:12px 14px;
-      border-radius:10px;
-      border:0;
-      background:var(--panel);
-      color:var(--text);
-      font-size:15px;
-      outline:none;
-    }
-    button.btn{
-      background:var(--accent);
-      color:#fff;
-      border:0;
-      padding:11px 16px;
-      border-radius:10px;
-      cursor:pointer;
-      font-weight:700;
-      transition:transform .12s ease, background .12s;
-    }
-    button.btn:hover{ transform:scale(1.04); background:#0093cc; }
-
-    .shortcuts{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      justify-content:center;
-      max-width:780px;
-      width:100%;
-    }
-
-    .tile{
-      position:relative;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-width:110px;
-      padding:14px 18px;
-      border-radius:12px;
-      background:var(--panel);
-      color:var(--text);
-      font-weight:700;
-      cursor:pointer;
-      user-select:none;
-      transition:transform .14s ease, background .14s;
-    }
-    .tile:hover{ transform:scale(1.04); background:var(--accent); color:#000 }
-
-    /* perfect circular remove button */
-    .remove-btn{
-      position:absolute;
-      top:20px;
-      left:6px;
-      width:16px;
-      height:16px;
-      padding:0;
-      border-radius:50%;
-      border:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:14px;
-      line-height:1;
-      background:rgba(255,255,255,0.12);
-      color:var(--text);
-      cursor:pointer;
-      opacity:0;
-      transform:scale(.98);
-      transition:opacity .14s ease, transform .14s ease, background .12s;
-    }
-    .tile:hover .remove-btn{ opacity:1; transform:scale(1); }
-    .remove-btn:hover{ background:rgba(255,60,60,0.9); transform:scale(1.08) }
-
-    .add-tile{
-      border:2px dashed var(--accent);
-      background:transparent;
-      color:var(--accent);
-      min-width:110px;
-    }
-
-    .controls{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      margin-top:6px;
-    }
-
-    /* toggle */
-    .switch{ position:relative; width:50px; height:26px; display:inline-block;}
-    .switch input{ display:none; }
-    .switch .track{
-      position:absolute; inset:0; border-radius:999px; background:#444; transition:background .18s;
-      display:flex;
-      align-items:center;
-    }
-    .switch .knob{
-      position:absolute; left:3px; top:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .18s;
-    }
-    .switch input:checked + .track{ background:var(--accent); }
-    .switch input:checked + .track > .knob{ transform:translateX(24px); }
-
-    /* small helper */
-    .muted{ color:#9aa2af; font-size:13px }
-    
-    /* NEW: Inspect button styles */
-    .inspect-btn {
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      z-index: 1000;
-      background: var(--muted);
-      color: var(--text);
-      border: 0;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: transform .12s ease, background .12s;
-    }
-    .inspect-btn:hover {
-      transform: scale(1.05);
-      background: var(--accent);
-      color: #000;
-    }
-    /* Hide the default Eruda floating button */
-    .eruda-entry-btn {
-      display: none;
-    }
-
-    @media (max-width:420px){
-      input[type="text"]{width:60vw}
-    }
-  </style>
-</head>
-<body>
-  <button id="inspectBtn" class="inspect-btn">Inspect</button>
-
-  <h1>Web Defender</h1>
-
-  <div class="input-row">
-    <input id="urlInput" type="text" placeholder="Enter URL (https://...)" />
-    <button id="openBtn" class="btn">Open</button>
-    <div class="controls">
-      <label class="muted">Open in new tab</label>
-      <label class="switch">
-        <input id="newTabSwitch" type="checkbox" checked>
-        <span class="track"><span class="knob"></span></span>
-      </label>
-    </div>
-  </div>
-
-  <div class="shortcuts" id="shortcuts"></div>
-
-  <script>
-    // -- data & storage helpers
-    const KEY = 'webDefenderShortcuts_v2';
-    const defaultShortcuts = [
-      { name: 'SoundBoard', url: 'https://soundboardw.com' },
-      { name: 'EmojiCombos', url: 'https://emojicombos.com' },
-    ];
-
-    function readStore(){
-      try{
-        const raw = localStorage.getItem(KEY);
-        if(!raw){
-          // initialize store with defaults so defaults become removable
-          localStorage.setItem(KEY, JSON.stringify(defaultShortcuts));
-          return [...defaultShortcuts];
-        }
-        return JSON.parse(raw) || [];
-      }catch(e){ return [...defaultShortcuts]; }
-    }
-    function writeStore(arr){
-      localStorage.setItem(KEY, JSON.stringify(arr));
-    }
-
-    // -- layout & behavior
-    const shortcutsWrap = document.getElementById('shortcuts');
-    const newTabSwitch = document.getElementById('newTabSwitch');
-    const urlInput = document.getElementById('urlInput');
-    const openBtn = document.getElementById('openBtn');
-
-    function buildTile(item){
-      const tile = document.createElement('div');
-      tile.className = 'tile';
-      tile.title = item.url;
-      tile.textContent = item.name;
-
-      // remove button (perfect circle)
-      const rb = document.createElement('button');
-      rb.className = 'remove-btn';
-      rb.innerHTML = '×';
-      rb.type = 'button';
-
-      rb.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        // remove from store
-        const cur = readStore();
-        const filtered = cur.filter(s => !(s.name === item.name && s.url === item.url));
-        writeStore(filtered);
-        renderShortcuts();
-      });
-
-      tile.addEventListener('click', (ev) => {
-        // ensure clicking the remove button doesn't trigger open (safety)
-        if(ev.target === rb) return;
-        openSecured(item.url);
-      });
-
-      tile.appendChild(rb);
-      return tile;
-    }
-
-    function renderShortcuts(){
-      shortcutsWrap.innerHTML = '';
-      const list = readStore();
-      list.forEach(it => shortcutsWrap.appendChild(buildTile(it)));
-
-      // add tile
-      const add = document.createElement('div');
-      add.className = 'tile add-tile';
-      add.textContent = '+ Add';
-      add.addEventListener('click', () => {
-        const name = prompt('Shortcut name (e.g. "Twitter")');
-        if(!name) return;
-        const url = prompt('Full URL (https://...)');
-        if(!url || !/^https?:\/\//i.test(url)){ alert('Please include https:// or http://'); return; }
-        const cur = readStore();
-        cur.push({ name: name.trim(), url: url.trim() });
-        writeStore(cur);
-        renderShortcuts();
-      });
-      shortcutsWrap.appendChild(add);
-    }
-
-    // -- open behaviour: always open about:blank then write HTML that contains iframe + beforeunload
-    function openSecured(url){
-      if(!/^https?:\/\//i.test(url)){ alert('Please include https:// or http://'); return; }
-      if(newTabSwitch.checked){
-        const w = window.open('about:blank', '_blank');
-        if(!w){ alert('Enable pop-ups for this site'); return; }
-        writeSecuredDoc(w.document, url);
-      } else {
-        // replace current document by navigating to about:blank first, then writing
-        // using location.href = 'about:blank' would create navigation and we lose JS context; instead we open blank in same tab by writing to document
-        const doc = document.open();
-        writeSecuredDoc(doc, url);
-      }
-    }
-
-    // writes a full HTML doc into targetDoc (either window.document or current doc)
-    function writeSecuredDoc(targetDoc, url){
-      // sanitize the url text to avoid breaking the written HTML (simple replace)
-      const safeUrl = String(url).replace(/<\/script>/gi, '<\\/script>');
-      const html = 
-`<!doctype html>
-<html>
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Website Secured</title>
-    <style>
-      html,body{height:100%;margin:0;background:#0b0b11}
-      iframe{width:100%;height:100%;border:0}
-      .bar{position:fixed;left:8px;top:8px;z-index:9999;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,0.45);color:#fff;font-family:Inter,Arial}
-      .btn{background:#00b7ff;color:#000;padding:6px 8px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:title" content="Web Defender" />
+    <meta property="og:description" content="Secure web browsing with beforeunload protection" />
+    <meta
+      property="og:image"
+      content="https://static.getmocha.com/og.png"
+      type="image/png"
+    />
+    <meta
+      property="og:url"
+      content="https://getmocha.com"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:author" content="Web Defender" />
+    <meta property="og:site_name" content="Web Defender" />
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:site" content="@get_mocha" />
+    <meta property="twitter:title" content="Web Defender" />
+    <meta property="twitter:description" content="Secure web browsing with beforeunload protection" />
+    <meta
+      property="twitter:image"
+      content="https://static.getmocha.com/og.png"
+      type="image/png"
+    />
+    <link
+      rel="shortcut icon"
+      href="https://static.getmocha.com/favicon.ico"
+      type="image/x-icon"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="https://static.getmocha.com/apple-touch-icon.png"
+      type="image/png"
+    />
+    <title>Web Defender</title>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   </head>
   <body>
-    <div class="bar">Web Defender — opened: ${safeUrl}   <button class="btn" id="openNew">Open in new tab</button></div>
-    <iframe src="${safeUrl}" id="wd-frame" ></iframe>
-    <script>
-      // add two handlers to be extra reliable
-      function beforeUnloadHandler(e){
-        var msg = 'You have unsaved changes — are you sure you want to leave?';
-        e = e || window.event;
-        if (e) e.returnValue = msg;
-        return msg;
-      }
-      window.onbeforeunload = beforeUnloadHandler;
-      window.addEventListener('beforeunload', beforeUnloadHandler);
-
-      // button to open real new tab from inside
-      document.getElementById('openNew').addEventListener('click', function(){
-        window.open('${safeUrl}', '_blank');
-      });
-
-      // small safeguard: if iframe tries to navigate top (rare), reattach listener
-      window.addEventListener('focus', function(){ window.onbeforeunload = beforeUnloadHandler; });
-    <\/script>
+    <div id="root"></div>
+    <script type="module" src="/src/react-app/main.tsx"></script>
   </body>
-</html>`;
-      try{
-        targetDoc.write(html);
-        targetDoc.close();
-      }catch(err){
-        // fallback: set location to about:blank then write using the opened window
-        console.error('write failed', err);
-      }
-    }
-
-    // wire up input open button
-    openBtn.addEventListener('click', () => {
-      const url = urlInput.value.trim();
-      if(!url){ alert('Please enter a URL'); return; }
-      openSecured(url);
-    });
-    
-    // NEW: Dev tools functionality
-    const inspectBtn = document.getElementById('inspectBtn');
-    if (window.eruda) {
-      eruda.init();
-      // hide console on start
-      eruda.hide();
-      inspectBtn.addEventListener('click', () => eruda.show());
-    } else {
-      inspectBtn.style.display = 'none';
-    }
-
-    // init
-    renderShortcuts();
-  </script>
-</body>
 </html>
