@@ -1,19 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta property="og:title" content="Web Defender" />
     <meta property="og:description" content="Secure web browsing with beforeunload protection" />
-    <meta
-      property="og:image"
-      content="https://static.getmocha.com/og.png"
-      type="image/png"
-    />
-    <meta
-      property="og:url"
-      content="https://getmocha.com"
-    />
+    <meta property="og:image" content="https://static.getmocha.com/og.png" type="image/png" />
+    <meta property="og:url" content="https://getmocha.com" />
     <meta property="og:type" content="website" />
     <meta property="og:author" content="Web Defender" />
     <meta property="og:site_name" content="Web Defender" />
@@ -21,27 +14,405 @@
     <meta property="twitter:site" content="@get_mocha" />
     <meta property="twitter:title" content="Web Defender" />
     <meta property="twitter:description" content="Secure web browsing with beforeunload protection" />
-    <meta
-      property="twitter:image"
-      content="https://static.getmocha.com/og.png"
-      type="image/png"
-    />
-    <link
-      rel="shortcut icon"
-      href="https://static.getmocha.com/favicon.ico"
-      type="image/x-icon"
-    />
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="https://static.getmocha.com/apple-touch-icon.png"
-      type="image/png"
-    />
+    <meta property="twitter:image" content="https://static.getmocha.com/og.png" type="image/png" />
+    <link rel="shortcut icon" href="https://static.getmocha.com/favicon.ico" type="image/x-icon" />
+    <link rel="apple-touch-icon" sizes="180x180" href="https://static.getmocha.com/apple-touch-icon.png" type="image/png" />
     <title>Web Defender</title>
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000000;
+        color: #fff;
+        font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        padding: 28px;
+        width: 100%;
+      }
+      .inspect-btn {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 1000;
+        background: #3D0000;
+        color: white;
+        border: 0;
+        padding: 8px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+      .inspect-btn:hover {
+        transform: scale(1.05);
+        background: #FF0000;
+        color: black;
+      }
+      h1 {
+        font-size: 1.6rem;
+        margin: 0 0 6px 0;
+        font-weight: 600;
+      }
+      .url-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .url-input {
+        width: 320px;
+        max-width: 70vw;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 0;
+        background: #3D0000;
+        color: white;
+        font-size: 15px;
+        outline: none;
+      }
+      .open-btn {
+        background: #FF0000;
+        color: white;
+        border: 0;
+        padding: 11px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 700;
+        transition: all 0.2s;
+      }
+      .open-btn:hover {
+        transform: scale(1.04);
+        background: #950101;
+      }
+      .toggle-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .toggle-label {
+        color: #9aa2af;
+        font-size: 13px;
+      }
+      .toggle {
+        position: relative;
+        width: 50px;
+        height: 26px;
+        display: inline-block;
+        cursor: pointer;
+      }
+      .toggle input {
+        display: none;
+      }
+      .toggle-slider {
+        position: absolute;
+        inset: 0;
+        border-radius: 13px;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+      }
+      .toggle-slider.off {
+        background: #444;
+      }
+      .toggle-slider.on {
+        background: #FF0000;
+      }
+      .toggle-knob {
+        position: absolute;
+        left: 3px;
+        top: 3px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: white;
+        transition: transform 0.3s;
+      }
+      .toggle-knob.on {
+        transform: translateX(24px);
+      }
+      .shortcuts {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 780px;
+        width: 100%;
+      }
+      .shortcut {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 110px;
+        padding: 14px 18px;
+        border-radius: 12px;
+        background: #3D0000;
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s;
+      }
+      .shortcut:hover {
+        transform: scale(1.04);
+        background: #FF0000;
+        color: black;
+      }
+      .remove-btn {
+        position: absolute;
+        top: 20px;
+        left: 6px;
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        border-radius: 50%;
+        border: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1;
+        background: rgba(255, 255, 255, 0.12);
+        color: white;
+        cursor: pointer;
+        opacity: 0;
+        transform: scale(0.98);
+        transition: all 0.2s;
+      }
+      .shortcut:hover .remove-btn {
+        opacity: 1;
+        transform: scale(1);
+      }
+      .remove-btn:hover {
+        background: rgba(255, 60, 60, 0.9);
+        transform: scale(1.08) !important;
+      }
+      .add-shortcut {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 110px;
+        padding: 14px 18px;
+        border-radius: 12px;
+        border: 2px dashed #FF0000;
+        background: transparent;
+        color: #FF0000;
+        font-weight: 700;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s;
+      }
+      .add-shortcut:hover {
+        transform: scale(1.04);
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/react-app/main.tsx"></script>
+    <button class="inspect-btn" onclick="window.eruda && window.eruda.show()">Inspect</button>
+    
+    <div class="container">
+      <h1>Web Defender</h1>
+      
+      <div class="url-controls">
+        <input
+          type="text"
+          id="url-input"
+          class="url-input"
+          placeholder="Enter URL (https://...)"
+        />
+        <button class="open-btn" onclick="handleOpen()">Open</button>
+        <div class="toggle-wrapper">
+          <label class="toggle-label">Open in new tab</label>
+          <label class="toggle">
+            <input type="checkbox" id="new-tab-toggle" checked />
+            <span class="toggle-slider on" id="toggle-slider">
+              <span class="toggle-knob on" id="toggle-knob"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="shortcuts" id="shortcuts-container"></div>
+    </div>
+
+    <script>
+      // Initialize Eruda immediately
+      if (window.eruda) {
+        window.eruda.init();
+      }
+
+      const KEY = 'webDefenderShortcuts_v2';
+      const defaultShortcuts = [
+        { name: 'SoundBoard', url: 'https://soundboardw.com' },
+        { name: 'EmojiCombos', url: 'https://emojicombos.com' },
+      ];
+
+      let shortcuts = [];
+      let openInNewTab = true;
+
+      // Load shortcuts
+      function loadShortcuts() {
+        try {
+          const raw = localStorage.getItem(KEY);
+          if (!raw) {
+            localStorage.setItem(KEY, JSON.stringify(defaultShortcuts));
+            shortcuts = [...defaultShortcuts];
+          } else {
+            shortcuts = JSON.parse(raw) || [];
+          }
+        } catch (e) {
+          shortcuts = [...defaultShortcuts];
+        }
+        renderShortcuts();
+      }
+
+      // Save shortcuts
+      function saveShortcuts() {
+        localStorage.setItem(KEY, JSON.stringify(shortcuts));
+        renderShortcuts();
+      }
+
+      // Render shortcuts
+      function renderShortcuts() {
+        const container = document.getElementById('shortcuts-container');
+        container.innerHTML = '';
+        
+        shortcuts.forEach((shortcut, index) => {
+          const div = document.createElement('div');
+          div.className = 'shortcut';
+          div.title = shortcut.url;
+          div.onclick = () => openSecured(shortcut.url);
+          div.innerHTML = `
+            ${shortcut.name}
+            <button class="remove-btn" onclick="event.stopPropagation(); removeShortcut(${index})">×</button>
+          `;
+          container.appendChild(div);
+        });
+
+        const addBtn = document.createElement('div');
+        addBtn.className = 'add-shortcut';
+        addBtn.textContent = '+ Add';
+        addBtn.onclick = addShortcut;
+        container.appendChild(addBtn);
+      }
+
+      // Add shortcut
+      function addShortcut() {
+        const name = prompt('Shortcut name (e.g. "Twitter")');
+        if (!name) return;
+        const url = prompt('Full URL (https://...)');
+        if (!url || !/^https?:\/\//i.test(url)) {
+          alert('Please include https:// or http://');
+          return;
+        }
+        shortcuts.push({ name: name.trim(), url: url.trim() });
+        saveShortcuts();
+      }
+
+      // Remove shortcut
+      function removeShortcut(index) {
+        shortcuts = shortcuts.filter((_, i) => i !== index);
+        saveShortcuts();
+      }
+
+      // Open secured page
+      function openSecured(targetUrl) {
+        if (!/^https?:\/\//i.test(targetUrl)) {
+          alert('Please include https:// or http://');
+          return;
+        }
+
+        const safeUrl = String(targetUrl).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        
+        const htmlParts = [
+          '<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1">',
+          '<title>Website Secured<','/title><style>html,body{height:100%;margin:0;background:#000000}',
+          'iframe{width:100%;height:100%;border:0}.bar{position:fixed;left:8px;top:8px;z-index:9999;',
+          'padding:8px 10px;border-radius:10px;background:rgba(61,0,0,0.85);color:#fff;font-family:Inter,Arial}',
+          '.btn{background:#FF0000;color:#000;padding:6px 8px;border-radius:8px;border:0;font-weight:700;cursor:pointer}',
+          '.btn:hover{background:#950101}<','/style><','/head><body><div class="bar">Web Defender — opened: ',
+          safeUrl,
+          '   <button class="btn" id="openNew">Open in new tab<','/button><','/div>',
+          '<iframe src="', targetUrl, '" id="wd-frame"><','/iframe>',
+          '<','script>',
+          'function beforeUnloadHandler(e){',
+          'var msg="You have unsaved changes — are you sure you want to leave?";',
+          'e=e||window.event;if(e)e.returnValue=msg;return msg}',
+          'window.onbeforeunload=beforeUnloadHandler;',
+          'window.addEventListener("beforeunload",beforeUnloadHandler);',
+          'document.getElementById("openNew").addEventListener("click",function(){',
+          'window.open("', targetUrl, '","_blank")});',
+          'window.addEventListener("focus",function(){window.onbeforeunload=beforeUnloadHandler});',
+          '<','/','script><','/body><','/html>'
+        ];
+        
+        const html = htmlParts.join('');
+
+        if (openInNewTab) {
+          const w = window.open('about:blank', '_blank');
+          if (!w) {
+            alert('Enable pop-ups for this site');
+            return;
+          }
+          w.document.write(html);
+          w.document.close();
+        } else {
+          const doc = document.open();
+          doc.write(html);
+          doc.close();
+        }
+      }
+
+      // Handle open button
+      function handleOpen() {
+        const urlInput = document.getElementById('url-input');
+        const url = urlInput.value.trim();
+        if (!url) {
+          alert('Please enter a URL');
+          return;
+        }
+        openSecured(url);
+      }
+
+      // Handle enter key on URL input
+      document.getElementById('url-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleOpen();
+      });
+
+      // Handle toggle
+      const toggle = document.getElementById('new-tab-toggle');
+      const slider = document.getElementById('toggle-slider');
+      const knob = document.getElementById('toggle-knob');
+      
+      toggle.addEventListener('change', (e) => {
+        openInNewTab = e.target.checked;
+        if (openInNewTab) {
+          slider.classList.add('on');
+          slider.classList.remove('off');
+          knob.classList.add('on');
+        } else {
+          slider.classList.remove('on');
+          slider.classList.add('off');
+          knob.classList.remove('on');
+        }
+      });
+
+      // Initialize
+      loadShortcuts();
+    </script>
   </body>
 </html>
